@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+  <body>
+    {% block content %} {% if locations %}
+    <ul>
+      {% for loc in locations %}
+      <li>
+        Postcode: {{loc.postcode}} <br />
+        Name: {{loc.name}} <br />
+        Address: {{loc.address}} <br />
+      </li>
+      {% endfor %}
+    </ul>
+    {% endif %} {% endblock %}
+  </body>
+</html>

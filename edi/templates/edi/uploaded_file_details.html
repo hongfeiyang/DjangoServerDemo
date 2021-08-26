@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+  <body>
+    {% block content %} {% if files and edi_urls %}
+
+    <ul>
+      {% for file in files %}
+      <li>
+        File Name: {{file.filename}} <br />
+        Uploaded at: {{file.uploaded_at}}
+      </li>
+      {% endfor %}
+    </ul>
+
+    {% for edi_url, edi_filename in edi_urls %}
+    <ul>
+      <li><a href={{edi_url}}>{{edi_filename}}</li>
+    </ul>
+    {% endfor %} {% else %}
+
+    <p>No files uploaded</p>
+
+    {% endif %}
+
+    <p><a href="{% url 'edi:index' %}">Return to home</a></p>
+    {% endblock %}
+  </body>
+</html>
