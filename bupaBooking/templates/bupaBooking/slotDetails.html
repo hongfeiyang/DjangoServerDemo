@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+  <body>
+    {% block content %} {% if slot %} {{slot.slot}} {% if slot.locations %}
+
+    <ul>
+      {% for location in slot.locations.all %}
+      <li>{{location.name}}, {{location.address}}, {{location.postcode}}</li>
+      {% endfor %}
+    </ul>
+
+    {%endif%} {% endif %} {% endblock %}
+  </body>
+</html>

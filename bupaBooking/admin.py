@@ -1,6 +1,6 @@
 from django.contrib import admin
-from .models import DateTimeSlot, Location
+from .models import Slot, Location
 # Register your models here.
 
-admin.site.register(DateTimeSlot)
+admin.site.register(Slot)
 admin.site.register(Location)

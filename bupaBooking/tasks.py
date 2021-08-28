@@ -2,7 +2,7 @@ from demoServer.celery import app
 from .booking import BupaBookingChecker, BupaBookingType, BupaBookingConfig, BupaEncoder, BupaLocation
 from celery.utils.log import get_task_logger
 import json
-from .models import Location, DateTimeSlot
+from .models import Location, Slot
 import datetime
 from django.utils.timezone import make_aware
 
@@ -35,7 +35,7 @@ def check_all_timeslots():
             for time in val:
                 _datetime = datetime.datetime.strptime(
                     f'{key} {time}', '%d/%m/%Y %I:%M %p')
-                slot, created = DateTimeSlot.objects.get_or_create(
+                slot, created = Slot.objects.get_or_create(
                     slot=make_aware(_datetime)
                 )
                 locationObj.slots.add(slot)

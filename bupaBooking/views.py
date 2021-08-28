@@ -1,11 +1,41 @@
 from django.http.response import HttpResponse
-from django.shortcuts import render
+from django.shortcuts import redirect, render
+from django.views import generic
+import datetime
 
-from .models import Location
+from .models import Location, Slot
 # Create your views here.
 
 
-def indexView(request):
-    results = Location.objects.get(postcode="5000").slots
-    a = results.values()
-    return HttpResponse(a)
+class LocationDetailView(generic.DetailView):
+    model = Location
+    context_object_name = 'location'
+    template_name = 'bupaBooking/locationDetails.html'
+
+
+class LocationsView(generic.ListView):
+    template_name = 'bupaBooking/locations.html'
+    context_object_name = 'locations'
+    queryset = Location.objects.all()
+
+    def get_context_data(self, **kwargs):
+        context = super(LocationsView, self).get_context_data(**kwargs)
+        # context['test'] = 'a'
+        return context
+
+
+class SlotDetailView(generic.DetailView):
+    model = Slot
+    context_object_name = 'slot'
+    template_name = 'bupaBooking/slotDetails.html'
+
+
+class SlotsView(generic.ListView):
+    template_name = 'bupaBooking/slots.html'
+    context_object_name = 'slots'
+    queryset = Slot.objects.all()
+    ordering = 'slot'
+
+
+class IndexView(generic.RedirectView):
+    pattern_name = 'bupaBooking:locations'

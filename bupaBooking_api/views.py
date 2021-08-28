@@ -1,8 +1,8 @@
 from django.db.models import query
 from django.shortcuts import render
 from rest_framework import generics
-from bupaBooking.models import Location, DateTimeSlot
-from .serializers import LocationSerializer, DateTimeSerializer
+from bupaBooking.models import Location, Slot
+from .serializers import LocationSerializer, SlotSerializer
 
 
 class LocationList(generics.ListAPIView):
@@ -10,6 +10,6 @@ class LocationList(generics.ListAPIView):
     serializer_class = LocationSerializer
 
 
-class DateTimeSlotList(generics.ListAPIView):
-    queryset = DateTimeSlot.objects.all()
-    serializer_class = DateTimeSerializer
+class SlotList(generics.ListAPIView):
+    queryset = Slot.objects.all()
+    serializer_class = SlotSerializer

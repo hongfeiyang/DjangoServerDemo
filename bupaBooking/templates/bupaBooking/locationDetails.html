@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+  <body>
+    {% block content %} {% if location %} Postcode: {{location.postcode}} <br />
+    Name: {{location.name}} <br />
+    Address: {{location.address}} <br />
+    {% if location.slots %}
+
+    <ul>
+      {% for slot in location.slots.all %}
+      <li>
+        <a href="{% url 'bupaBooking:slotDetails' slot.id %}">{{slot.slot}}</a>
+      </li>
+      {% endfor %}
+    </ul>
+
+    {%endif%} {% endif %} {% endblock %}
+  </body>
+</html>

@@ -1,10 +1,10 @@
 from rest_framework import serializers
-from bupaBooking.models import Location, DateTimeSlot
+from bupaBooking.models import Location, Slot
 
 
-class DateTimeSerializer(serializers.ModelSerializer):
+class SlotSerializer(serializers.ModelSerializer):
     class Meta:
-        model = DateTimeSlot
+        model = Slot
         fields = ('slot',)
 
 
@@ -13,4 +13,4 @@ class LocationSerializer(serializers.ModelSerializer):
         model = Location
         fields = ('name', 'address', 'postcode', 'slots')
 
-    slots = DateTimeSerializer(read_only=True, many=True)
+    slots = SlotSerializer(read_only=True, many=True)

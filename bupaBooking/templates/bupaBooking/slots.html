@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+  <body>
+    {% block content %} {% if slots %}
+    <ul>
+      {% for slot in slots %}
+      <li>
+        {{slot.slot}}<br />
+        <a href="{% url 'bupaBooking:slotDetails' slot.id %}"
+          >{{slot.locations.count}} Locations{{slot.locations.count|pluralize}}
+          Available</a
+        >
+      </li>
+      {% endfor %}
+    </ul>
+    {% endif %} {% endblock %}
+  </body>
+</html>
