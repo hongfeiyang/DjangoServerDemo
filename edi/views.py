@@ -73,6 +73,9 @@ class UploadPdfView(generic.FormView):
                 destination.write(chunk)
 
     def post(self, request, *args, **kwargs):
+        # clear names array since this class instance is retained for each request
+        # so that we wont get previous files merged
+        self.uploadedFileNames = []
         form_class = self.get_form_class()
         form = self.get_form(form_class)
         files: List[UploadedFile] = request.FILES.getlist('data')
