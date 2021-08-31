@@ -18,10 +18,12 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from rest_framework import routers
+from bupaBooking_api.viewsets import LocationViewSet, UserViewSet
 
 
 router = routers.DefaultRouter()
-
+router.register(r'location', LocationViewSet)
+router.register(r'user', UserViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),

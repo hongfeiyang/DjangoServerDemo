@@ -1,6 +1,6 @@
 from enum import Enum
 from logging import fatal
-from typing import Dict, List
+from typing import Dict, List, Union
 from bs4 import BeautifulSoup
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver import ActionChains
@@ -18,6 +18,18 @@ from selenium.common.exceptions import TimeoutException
 import os
 import json
 
+ACT_POSTCODES = ['2617']
+NSW_POSTCODES = ['2000', '2150', '2153', '2518', '2800',
+                 '2640', '2899', '2340', '2650', '2290', '2444']
+NT_POSTCODES = ['0870', '0820']
+QLD_POSTCODES = ['4000', '4814', '4670',
+                 '4870', '4680', '4740', '4226', '4350', '4825']
+SA_POSTCODES = ['5000', '5014', '5700']
+TAS_POSTCODES = ['7000', '7250']
+VIC_POSTCODES = ['3008', '3088', '3131', '3500', '3072', '3350']
+WA_POSTCODES = ['6000', '6330', '6725', '6230',
+                '6701', '6798', '6531', '6430', '6743', '6714']
+
 
 class BupaEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -25,6 +37,18 @@ class BupaEncoder(json.JSONEncoder):
             return obj.__dict__
         # Let the base class default method raise the TypeError
         return json.JSONEncoder.default(self, obj)
+
+
+class BupaMedicalItem(Enum):
+    MedicalExamination = 501
+    ChestXRay = 502
+    SerumCreatinine = 704
+    HIVTest = 707
+    HepatitisBTest = 708
+    SyphilisTest = 712
+    LiverFunctionTests = 715
+    HepatitisCTest = 716
+    TBScreeningTestIGRATST = 719
 
 
 class BupaBookingType(Enum):
@@ -37,7 +61,7 @@ class BupaLocation(object):
     address: str
     postcode: str
 
-    def __init__(self, raw_string: str = None, fallbackPostcode: str = None):
+    def __init__(self, raw_string: str = None, fallbackPostcode: str = None, jsonString=None):
         if raw_string is not None:
             splits = raw_string.split('\n')
             self.name = splits[0]
@@ -45,6 +69,9 @@ class BupaLocation(object):
             if not self.postcode.isnumeric():
                 self.postcode = fallbackPostcode
             self.address = ', '.join([i.strip(',') for i in splits[1:]])
+
+        if jsonString is not None:
+            self.fromJson(jsonString)
 
     def __lt__(self, other):
         return self.postcode+self.name+self.address < other.postcode+other.name+other.address
@@ -64,59 +91,44 @@ class BupaLocation(object):
     def toJson(self):
         return json.dumps(self, default=lambda o: o.__dict__)
 
-
-class BupaBookingConfig:
-
-    bookingType: BupaBookingType
-    postcode: str
-    location: str
-    medicalItems: List[str] = []
-
-    def __init__(self, bookingType: BupaBookingType, postcode: str, location: BupaLocation, medicalItems: List[str]) -> None:
-        self.bookingType = bookingType
-        self.postcode = postcode
-        self.location = location
-        self.medicalItems = [i.strip() for i in medicalItems]
-        assert self.bookingType is not None
-        assert self.postcode is not None
-        assert len(self.postcode) == 4 and self.postcode.isalnum(
-        ), 'illegal postcode'
-        # assert self.location is not None
-        # assert self.medicalItems is not None
-        # assert len(self.medicalItems) > 0, 'must have at least one medical item'
-
-    def __str__(self) -> str:
-        out = ''
-        out += f'{self.bookingType}\n'
-        out += f'{self.postcode}\n'
-        out += f'{self.location}\n'
-        out += f'{self.medicalItems}\n'
-        return out
+    def fromJson(self, jsonString):
+        obj = json.loads(jsonString)
+        self.name = obj['name']
+        self.address = obj['address']
+        self.postcode = obj['postcode']
 
 
 class BupaBookingChecker():
 
-    config: BupaBookingConfig
     driver: WebDriver
+    bookingType: BupaBookingType
+    medicalItems: List[BupaMedicalItem]
+    # locations: List[BupaLocation]
+    # availabilities: Dict[BupaLocation, Dict[str, List[str]]]
 
-    def __init__(self, config: BupaBookingConfig, driver: WebDriver = None) -> None:
-        self.config = config
+    def __init__(self, bookingType: BupaBookingType, medicalItems: List[BupaMedicalItem], driver: WebDriver = None) -> None:
+        self.bookingType = bookingType
+        self.medicalItems = [] + medicalItems
+        self.driver = driver
         if driver is None:
             self._setup()
-        assert self.config is not None
         assert self.driver is not None
+        assert self.bookingType is not None
+        assert self.medicalItems is not None
+        assert len(self.medicalItems) > 0, 'must have at least one medical item'
 
     def tearDown(self):
         self.driver.close()
 
     def _setup(self):
-        chrome_options = Options()
+        chrome_options = webdriver.ChromeOptions()
+        chrome_options.headless = True
         chrome_options.add_argument("--disable-extensions")
         # disable gpu if running on Windows with --headless option
-        chrome_options.add_argument("--disable-gpu")
-        chrome_options.add_argument("--no-sandbox")  # linux only
+        # chrome_options.add_argument("--disable-gpu")
+        # chrome_options.add_argument("--no-sandbox")  # linux only
         # if you need to set this up on a server
-        chrome_options.add_argument("--headless")
+        # chrome_options.add_argument("--headless")
         self.driver = webdriver.Chrome(os.path.join(
             settings.BASE_DIR, 'bupaBooking/utils/chromedriver'), options=chrome_options)
 
@@ -293,9 +305,9 @@ class BupaBookingChecker():
         newFamilyBooking = self.driver.find_element_by_id(
             "ContentPlaceHolder1_btnFam")
 
-        if self.config.bookingType == BupaBookingType.INDIVIDUAL:
+        if self.bookingType == BupaBookingType.INDIVIDUAL:
             newIndividualBooking.click()
-        elif self.config.bookingType == BupaBookingType.FAMILY:
+        elif self.bookingType == BupaBookingType.FAMILY:
             newFamilyBooking.click()
         else:
             fatal('booking type not registered')
@@ -308,10 +320,12 @@ class BupaBookingChecker():
             "//button[contains(normalize-space(text()), 'Back')]")
         backButton.click()
 
-    def discoverLocations(self) -> List[BupaLocation]:
+    def discoverLocations(self, serialized=False) -> List[Union[BupaLocation, str]]:
         self._runInitialFlow()
         result = set()
-        for postcode in ['2000', '2600', '3000', '4000', '5000', '7000', '0800']:
+        postcodes = set(ACT_POSTCODES + NSW_POSTCODES + VIC_POSTCODES + WA_POSTCODES +
+                        SA_POSTCODES + QLD_POSTCODES + TAS_POSTCODES + NT_POSTCODES)
+        for postcode in postcodes:
             WebDriverWait(self.driver, 10).until(EC.element_to_be_clickable(
                 (By.ID, "ContentPlaceHolder1_SelectLocation1_txtSuburb")))
             postcodeTextField = self.driver.find_element_by_id(
@@ -337,7 +351,12 @@ class BupaBookingChecker():
             else:
                 continue
 
-        return sorted(result)
+        result = sorted(result)
+
+        if serialized:
+            return list(map(lambda x: x.toJson(), result))
+
+        return result
 
     def _tryWaitForBlockUISpinnerToDisappear(self):
         try:
@@ -348,7 +367,7 @@ class BupaBookingChecker():
         except:
             pass
 
-    def discoverTimesForLocation(self, location: BupaLocation):
+    def discoverTimesForLocation(self, location: BupaLocation) -> Dict[str, List[str]]:
 
         self._runInitialFlow()
 
@@ -365,10 +384,10 @@ class BupaBookingChecker():
         # WebDriverWait(self.driver, 10).until(
         #     EC.presence_of_element_located((By.CLASS_NAME, "trlocation")))
 
-        location = self.driver.find_element_by_xpath(
+        locationElem = self.driver.find_element_by_xpath(
             f"//tr[contains(@class, 'trlocation')][td/span[contains(normalize-space(text()), '{location.name}')]]")
 
-        location.click()
+        locationElem.click()
 
         # optional alert here
         self._tryDismissCovid19Alert()
@@ -378,9 +397,9 @@ class BupaBookingChecker():
         WebDriverWait(self.driver, 10).until(EC.url_contains(
             'bmvs.onlineappointmentscheduling.net.au/oasis/Products.aspx'))
 
-        for item in self.config.medicalItems:
+        for item in self.medicalItems:
             itemButton = self.driver.find_element_by_xpath(
-                f"//tr[contains(@class, 'product-label')][./td/label[contains(text(), '{item}')]]/td/input")
+                f"//tr[contains(@class, 'product-label')][./td/label[contains(text(), '{item.value}')]]/td/input")
             itemButton.click()
 
         self._findAndClickNextButton()

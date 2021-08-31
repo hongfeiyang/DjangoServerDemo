@@ -9,4 +9,5 @@ urlpatterns = [
          name='locationDetails'),
     path('slots/', views.SlotsView.as_view(), name='slots'),
     path('slot/<int:pk>', views.SlotDetailView.as_view(), name='slotDetails'),
+    path('test/', views.testView, name='test')
 ]

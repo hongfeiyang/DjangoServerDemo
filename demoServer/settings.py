@@ -153,8 +153,8 @@ DEFAULT_FROM_EMAIL = '' # email required
 CELERY_BEAT_MAX_LOOP_INTERVAL = 60*60
 CELERY_BEAT_SCHEDULE = {
     "scheduled_task": {
-        "task": "check_all_timeslots",
-        "schedule": 60*15 # check every 15 minutes
+        "task": "checkTimeSlotsForAll",
+        "schedule": 60*10 # check every 1 minutes
         # "args": (),
     }
 }
@@ -165,7 +165,7 @@ REST_FRAMEWORK = {
     # Use Django's standard `django.contrib.auth` permissions,
     # or allow read-only access for unauthenticated users.
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly'
+        'rest_framework.permissions.AllowAny'
     ],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 10

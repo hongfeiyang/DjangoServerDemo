@@ -15,6 +15,7 @@ flower = "*"
 django-celery-beat = "*"
 django-celery-results = "*"
 djangorestframework = "*"
+pypdf2 = "*"
 
 [dev-packages]
 autopep8 = "*"

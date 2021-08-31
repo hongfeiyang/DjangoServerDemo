@@ -1,11 +1,13 @@
 import os
+from django.core.validators import FileExtensionValidator
 from django.db import models
 from django.conf import settings
 # Create your models here.
 
 
 class Document(models.Model):
-    document = models.FileField(upload_to='')
+    document = models.FileField(upload_to='', validators=[
+                                FileExtensionValidator(allowed_extensions=['csv'])])
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
     def filename(self):

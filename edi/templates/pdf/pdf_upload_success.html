@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+  <body>
+    {% block content %} {% if files and output%}
+
+    <ul>
+      {% for file in files %}
+      <li>File Name: {{file}} <br /></li>
+      {% endfor %}
+    </ul>
+
+    <p><a href="{{output}}">Click to download merged PDF</a></p>
+
+    {% else %}
+
+    <p>No files uploaded</p>
+
+    {% endif %}
+
+    <p><a href="{% url 'edi:index' %}">Return to home</a></p>
+    {% endblock %}
+  </body>
+</html>

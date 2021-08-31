@@ -1,7 +1,7 @@
+from bupaBooking.booking import BupaBookingChecker, BupaBookingType, BupaMedicalItem
 from django.http.response import HttpResponse
-from django.shortcuts import redirect, render
 from django.views import generic
-import datetime
+from .tasks import checkTimeSlotsForAll
 
 from .models import Location, Slot
 # Create your views here.
@@ -39,3 +39,8 @@ class SlotsView(generic.ListView):
 
 class IndexView(generic.RedirectView):
     pattern_name = 'bupaBooking:locations'
+
+
+def testView(request):
+
+    return HttpResponse()
