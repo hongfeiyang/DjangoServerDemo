@@ -42,5 +42,9 @@ class IndexView(generic.RedirectView):
 
 
 def testView(request):
+    # checker = BupaBookingChecker(bookingType=BupaBookingType.INDIVIDUAL, medicalItems=[
+    #                              BupaMedicalItem.MedicalExamination, BupaMedicalItem.ChestXRay, BupaMedicalItem.HIVTest])
 
+    # locations = checker.discoverLocations(serialized=True)
+    # checker.tearDown()
     return HttpResponse()

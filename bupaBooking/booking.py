@@ -17,6 +17,7 @@ from django.conf import settings
 from selenium.common.exceptions import TimeoutException
 import os
 import json
+import math
 
 ACT_POSTCODES = ['2617']
 NSW_POSTCODES = ['2000', '2150', '2153', '2518', '2800',
@@ -60,6 +61,7 @@ class BupaLocation(object):
     name: str
     address: str
     postcode: str
+    distanceToPostcode: float  # in km
 
     def __init__(self, raw_string: str = None, fallbackPostcode: str = None, jsonString=None):
         if raw_string is not None:
@@ -77,16 +79,16 @@ class BupaLocation(object):
         return self.postcode+self.name+self.address < other.postcode+other.name+other.address
 
     def __str__(self) -> str:
-        return f'{self.name} @ {self.address}'
+        return f'{self.name} @ {self.address}, {self.distanceToPostcode} km to {self.postcode} '
 
     def __hash__(self) -> int:
-        return hash((self.name, self.address, self.postcode))
+        return hash((self.name, self.address, self.postcode, self.distanceToPostcode))
 
     def __eq__(self, other) -> bool:
         if not isinstance(other, BupaLocation):
             return False
 
-        return self.name == other.name and self.address == other.address and self.postcode == other.postcode
+        return self.name == other.name and self.address == other.address and self.postcode == other.postcode and self.distanceToPostcode == other.distanceToPostcode
 
     def toJson(self):
         return json.dumps(self, default=lambda o: o.__dict__)
@@ -96,6 +98,7 @@ class BupaLocation(object):
         self.name = obj['name']
         self.address = obj['address']
         self.postcode = obj['postcode']
+        self.distanceToPostcode = obj['distanceToPostcode']
 
 
 class BupaBookingChecker():
@@ -118,7 +121,8 @@ class BupaBookingChecker():
         assert len(self.medicalItems) > 0, 'must have at least one medical item'
 
     def tearDown(self):
-        self.driver.close()
+        if self.driver is not None:
+            self.driver.close()
 
     def _setup(self):
         chrome_options = webdriver.ChromeOptions()
@@ -322,7 +326,7 @@ class BupaBookingChecker():
 
     def discoverLocations(self, serialized=False) -> List[Union[BupaLocation, str]]:
         self._runInitialFlow()
-        result = set()
+        result = []
         postcodes = set(ACT_POSTCODES + NSW_POSTCODES + VIC_POSTCODES + WA_POSTCODES +
                         SA_POSTCODES + QLD_POSTCODES + TAS_POSTCODES + NT_POSTCODES)
         for postcode in postcodes:
@@ -335,23 +339,54 @@ class BupaBookingChecker():
             postcodeTextField.send_keys(postcode)
             postcodeTextField.send_keys(Keys.ENTER)
 
-            # wait for please wait spinner to disappear
-            blockUISpinner = self.driver.find_element_by_xpath(
-                "//div[contains(@class, 'blockUI')]")
-            WebDriverWait(self.driver, 10).until(
-                EC.staleness_of(blockUISpinner))
+            self._tryWaitForBlockUISpinnerToDisappear()
 
             location_name_query = "//tr[contains(@class, 'trlocation')]/td[contains(@class, 'tdloc_name')]/span"
             location_names = self.driver.find_elements_by_xpath(
                 location_name_query)
             if len(location_names) > 0:
-                result.update([BupaLocation(raw_string=loc.text, fallbackPostcode=postcode)
-                               for loc in location_names])
+                for loc in location_names:
+                    locObj = BupaLocation(
+                        raw_string=loc.text, fallbackPostcode=postcode)
+                    try:
+                        # first look for an exisiting location added previously
+                        # with the same address and name, if it exist, check it's distance
+                        # and only replace it with our new location if its distance to postcode
+                        # is greater than the new one.
+                        # this way we try our best to retain unique locations with
+                        # the best approximation of its actual postcode, since bupa sometimes does not
+                        # have postcode attached to a listed location. (sigh...)
+                        location_distance_query = f"//tr[contains(@class, 'trlocation')][./td[contains(@class, 'tdloc_name')]/span[contains(normalize-space(text()), '{locObj.name}')]]/td[contains(@class, 'td-distance')]"
+                        distance = math.inf
+                        # becuase bupa programmers are careless, they use inconsistent html tags to show distance to locations,
+                        # tldr, sometimes distance is enclosed in a <span> tag under <td> tag, sometimes it's enclosed in a <td> tag directly
+                        # we need to try both case ...
+                        try:
+                            distanceElem = self.driver.find_element_by_xpath(
+                                location_distance_query)
+                            distance = float(distanceElem.text.split(' ')[0])
+                        except:
+                            location_distance_query += '/span'
+                            distanceElem = self.driver.find_element_by_xpath(
+                                location_distance_query)
+                            distance = float(distanceElem.text.split(' ')[0])
 
+                        locObj.distanceToPostcode = distance
+                        existing_loc = [i for i in result if i.name ==
+                                        locObj.name and i.address == locObj.address]
+                        if len(existing_loc) > 0:
+                            if existing_loc[0].distanceToPostcode > distance:
+                                result.remove(existing_loc[0])
+                                result.append(locObj)
+                        else:
+                            result.append(locObj)
+                    except Exception:
+                        result.append(locObj)
             else:
+                # no locations were found for this postcode
                 continue
 
-        result = sorted(result)
+        result = sorted(set(result))
 
         if serialized:
             return list(map(lambda x: x.toJson(), result))
