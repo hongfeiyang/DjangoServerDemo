@@ -1,5 +1,4 @@
 from enum import Enum
-from logging import fatal
 from typing import Dict, List, Union
 from bs4 import BeautifulSoup
 from selenium.webdriver.common.keys import Keys
@@ -12,12 +11,10 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import Select
 import re
 from bs4.element import Tag
-from selenium.webdriver.chrome.options import Options
-from django.conf import settings
 from selenium.common.exceptions import TimeoutException
-import os
 import json
 import math
+
 
 ACT_POSTCODES = ['2617']
 NSW_POSTCODES = ['2000', '2150', '2153', '2518', '2800',
@@ -103,6 +100,7 @@ class BupaLocation(object):
 
 class BupaBookingChecker():
 
+    host = '0.0.0.0'
     driver: WebDriver
     bookingType: BupaBookingType
     medicalItems: List[BupaMedicalItem]
@@ -125,16 +123,21 @@ class BupaBookingChecker():
             self.driver.close()
 
     def _setup(self):
-        chrome_options = webdriver.ChromeOptions()
-        chrome_options.headless = True
-        chrome_options.add_argument("--disable-extensions")
+
         # disable gpu if running on Windows with --headless option
         # chrome_options.add_argument("--disable-gpu")
         # chrome_options.add_argument("--no-sandbox")  # linux only
         # if you need to set this up on a server
         # chrome_options.add_argument("--headless")
-        self.driver = webdriver.Chrome(os.path.join(
-            settings.BASE_DIR, 'bupaBooking/utils/chromedriver'), options=chrome_options)
+        # self.driver = webdriver.Chrome(os.path.join(
+        #     settings.BASE_DIR, 'bupaBooking/utils/chromedriver'), options=chrome_options)
+
+        options = webdriver.ChromeOptions()
+        options.add_argument('--headless')
+        options.add_argument("--disable-extensions")
+        self.driver = webdriver.Remote(
+            "http://selenium-hub:4444/wd/hub", options=options)
+        # self.driver.implicitly_wait(10)
 
     def simulateSlowNetwork(self):
         self.driver.set_network_conditions(
@@ -314,7 +317,7 @@ class BupaBookingChecker():
         elif self.bookingType == BupaBookingType.FAMILY:
             newFamilyBooking.click()
         else:
-            fatal('booking type not registered')
+            raise Exception('booking type not registered')
 
         WebDriverWait(self.driver, 10).until(EC.url_contains(
             "https://bmvs.onlineappointmentscheduling.net.au/oasis/Location.aspx"))

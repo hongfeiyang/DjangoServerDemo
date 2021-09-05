@@ -10,18 +10,25 @@ class Slot(models.Model):
     slot = models.DateTimeField(
         auto_now=False, auto_now_add=False)
 
+    class Meta:
+        ordering = ['slot']
+
+    def __str__(self) -> str:
+        return self.slot.__str__()
+
 
 class Location(models.Model):
     name = models.CharField(max_length=255)
     address = models.CharField(max_length=255)
     postcode = models.CharField(max_length=4)
-    slots = models.ManyToManyField(Slot, related_name='locations')
+    slots = models.ManyToManyField(
+        Slot, related_name='locations', through='LocationSlot')
 
     def __str__(self) -> str:
         return f'{self.name},\n{self.address},\n{self.postcode}'
 
     class Meta:
-        ordering = ['name', 'address', 'postcode']
+        ordering = ['postcode', 'name', 'address', ]
         unique_together = ['name', 'address', 'postcode']
 
 
@@ -48,6 +55,9 @@ class MedicalItem(models.Model):
         (708, '708 Hepatitis B test'),
     ]
     code = models.IntegerField(choices=MEDICAL_ITEM_CHOICES, primary_key=True)
+
+    class Meta:
+        ordering = ['code']
 
 
 class User(models.Model):

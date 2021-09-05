@@ -144,22 +144,23 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_HOST_USER = '' # email required
-EMAIL_HOST_PASSWORD = '' # password required
+EMAIL_HOST_USER = ''  # email required
+EMAIL_HOST_PASSWORD = ''  # password required
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-DEFAULT_FROM_EMAIL = '' # email required
+DEFAULT_FROM_EMAIL = ''  # email required
 
 CELERY_BEAT_MAX_LOOP_INTERVAL = 60*60
 CELERY_BEAT_SCHEDULE = {
     "scheduled_task": {
         "task": "checkTimeSlotsForAll",
-        "schedule": 60*10 # check every 1 minutes
+        "schedule": 60*2  # check every 5 minutes
         # "args": (),
     }
 }
 
-CELERY_RESULT_BACKEND = 'django-db'
+CELERY_RESULT_BACKEND = os.environ.get("CELERY_BROKER", "redis://redis:6379/0")
+CELERY_BROKER_URL = os.environ.get("CELERY_BROKER", "redis://redis:6379/0")
 
 REST_FRAMEWORK = {
     # Use Django's standard `django.contrib.auth` permissions,

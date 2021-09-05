@@ -1,0 +1,77 @@
+version: "3.8"
+
+services:
+  django:
+    build: .
+    container_name: django
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - .:/usr/src/app/
+    ports:
+      - "8000:8000"
+    environment:
+      - DEBUG=1
+      - DJANGO_ALLOWED_HOSTS=localhost 127.0.0.1
+      - CELERY_BROKER=redis://redis:6379/0
+      - CELERY_BACKEND=redis://redis:6379/0
+    depends_on:
+      - pgdb
+      - redis
+
+  celery-worker:
+    build: .
+    command: celery -A demoServer worker -l INFO
+    volumes:
+      - .:/usr/src/app
+    depends_on:
+      - django
+      - redis
+
+  celery-beat:
+    build: .
+    command: celery -A demoServer beat -l INFO
+    volumes:
+      - .:/usr/src/app
+    depends_on:
+      - django
+      - redis
+      - celery-worker
+      - selenium-hub
+
+  pgdb:
+    image: postgres
+    container_name: pgdb
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  redis:
+    image: "redis:alpine"
+
+  selenium-hub:
+    image: selenium/hub
+    container_name: selenium-hub
+    ports:
+      - "4444:4444"
+    expose:
+      - 4444
+  chrome:
+    image: selenium/node-chrome
+    deploy:
+      replicas: 1
+    ports:
+      - "5900:5900"
+    volumes:
+      - /dev/shm:/dev/shm
+    depends_on:
+      - selenium-hub
+    environment:
+      - HUB_HOST=selenium-hub
+      - HUB_PORT=4444
+      - JAVA_OPTS=-Dwebdriver.chrome.whitelistedIps=
+
+volumes:
+  pgdata:

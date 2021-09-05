@@ -2,18 +2,19 @@
 <html>
   <body>
     {% block content %} {% if locations %}
-    <ul>
+    <div>
       {% for loc in locations %}
-      <li>
+      <div>
         Postcode: {{loc.postcode}} <br />
         Name: {{loc.name}} <br />
         Address: {{loc.address}} <br />
         <a href="{% url 'bupaBooking:locationDetails' loc.id %}"
           >{{loc.slots.count}} Slot{{loc.slots.count|pluralize}} Available</a
         >
-      </li>
+        <hr />
+      </div>
       {% endfor %}
-    </ul>
+    </div>
     {% endif %} {% endblock %}
   </body>
 </html>
